@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Ok, Result};
 use polars::lazy::{dsl::col, frame::LazyFrame};
 
 use super::{expressions::get_index_expr_if_needed, operations::filter_columns, processor::{Runnable, ScanFile}};
@@ -39,13 +39,14 @@ impl Runnable for ParqProcessor {
         let index_value = &self.index_value;
 
         let lf1 = self.scan()?;
-        let index_expr = get_index_expr_if_needed(index_name, index_value);
         let exprs = self.cols.as_ref().map(|values| values.iter().map(|column| col(column)).collect::<Vec<_>>());
-
-        return match index_expr {
-            Some(index_exp) => Ok(filter_columns(lf1, &exprs).filter(index_exp)),
-            None => Ok(filter_columns(lf1, &exprs)),
-        };
+        match (index_name, index_value) {
+            (Some(idx_name), Some(idx_value)) => {
+                let index_expr = get_index_expr_if_needed(idx_name, idx_value)?;
+                Ok(filter_columns(lf1, &exprs).filter(index_expr))
+            }
+            _ => Ok(filter_columns(lf1, &exprs)),
+        }
     }
 }
 
