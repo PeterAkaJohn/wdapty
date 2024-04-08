@@ -36,12 +36,7 @@ pub fn run() -> Result<()> {
     let args = CliArgs::parse();
 
     let processor = match args.execution_type.as_str() {
-        "parq" => Processors::Parq(ParqProcessor {
-            cols: args.cols,
-            file_name: args.file_name,
-            index_name: args.index_name,
-            index_value: args.index_value,
-        }),
+        "parq" => Processors::Parq(ParqProcessor::new(args.index_name, args.index_value, args.cols, args.file_name)),
         _ => return Err(anyhow::anyhow!("Invalid Execution type")),
     };
 

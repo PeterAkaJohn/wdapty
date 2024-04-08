@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use anyhow::{Context, Ok, Result};
 use polars::lazy::{dsl::col, frame::LazyFrame};
@@ -12,24 +12,31 @@ pub struct ParqProcessor {
     pub file_name: PathBuf,
 }
 
+impl ParqProcessor {
+    pub fn new(index_name: Option<String>, index_value: Option<String>, cols: Option<Vec<String>>, file_name: PathBuf) -> Self {
+        let file_name = if file_name.starts_with("~") {
+            let expanded_path = shellexpand::tilde(
+                &file_name
+                    .to_string_lossy()
+                    .into_owned()
+            )
+            .to_string();
+            PathBuf::from(expanded_path)
+        } else {
+            file_name
+        };
+        return Self {
+            index_name,
+            index_value,
+            cols,
+            file_name
+        }
+    }
+}
+
 impl ScanFile for ParqProcessor {
     fn scan(&self) -> Result<LazyFrame> {
-        let file_name = match self.file_name.starts_with("~") {
-            true => {
-                let expanded_path = shellexpand::tilde(
-                    self.file_name
-                        .as_os_str()
-                        .to_str()
-                        .expect("Failed in casting file_name to string"),
-                )
-                .to_string();
-                Path::new(&expanded_path).to_path_buf()
-            },
-            false => {
-                self.file_name.clone()
-            },
-        };
-        return LazyFrame::scan_parquet(&file_name, Default::default()).with_context(|| format!("File does not exist"))
+        return LazyFrame::scan_parquet(&self.file_name, Default::default()).with_context(|| format!("File does not exist"))
     }
 }
 
