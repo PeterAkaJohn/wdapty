@@ -77,18 +77,9 @@ mod tests {
     use rand::distributions::Alphanumeric;
     use rand::{thread_rng, Rng};
 
-    use super::*;
+    use crate::generated_test_files_path;
 
-    macro_rules! generated_test_files_path {
-        ($fname:expr) => {
-            format!(
-                "{}{}{}",
-                env!("CARGO_MANIFEST_DIR"),
-                "/resources/test/generated/",
-                $fname
-            )
-        };
-    }
+    use super::*;
 
     fn random_numbers(num_of_results: u32) -> Vec<u32> {
         return [0..num_of_results]
