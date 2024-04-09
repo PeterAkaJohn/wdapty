@@ -1,2 +1,3 @@
 /target
 /test_results
+/file_processing/resources/test/generated/*.parq

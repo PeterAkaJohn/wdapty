@@ -42,13 +42,12 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn test_get_index_expr_if_needed_failure_if_value_wrong() {
         let index_name = "random_datetime_column";
         let index_value = "2024-02- 17:02:00";
 
-        let _ = get_index_expr_if_needed(index_name, index_value);
+        let result = get_index_expr_if_needed(index_name, index_value);
 
-        // assert!(result.is_none(), "Expected None");
+        assert!(result.is_err(), "Expected None");
     }
 }
