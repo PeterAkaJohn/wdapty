@@ -656,6 +656,7 @@ dependencies = [
  "log",
  "polars",
  "predicates",
+ "rand",
  "shellexpand",
 ]
 
