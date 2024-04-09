@@ -33,11 +33,8 @@ mod tests {
         let result = get_index_expr_if_needed(index_name, index_value);
 
         match result {
-            Ok(expr) => match expr {
-                Expr::BinaryExpr { .. } => assert!(true),
-                _ => assert!(false, "expected an Expr"),
-            },
-            _ => assert!(false, "expected an Expr"),
+            Ok(Expr::BinaryExpr { .. }) => assert!(true),
+            _ => assert!(false, "Expected an Expr"),
         }
     }
 
