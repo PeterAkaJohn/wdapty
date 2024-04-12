@@ -10,7 +10,7 @@ anyhow = "1.0.81"
 aws-sdk-s3 = "1.22.0"
 clap = { version = "4.5.4", features = ["derive"] }
 clap-verbosity-flag = "2.2.0"
-polars = { version = "0.38.3", features = ["lazy", "parquet", "aws"] }
+polars = { version = "0.38.3", features = ["lazy", "parquet", "aws", "cloud"] }
 rand = "0.8.5"
 shellexpand = "3.1.0"
 credentials={path = "../credentials"}

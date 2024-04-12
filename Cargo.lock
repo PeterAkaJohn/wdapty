@@ -3510,6 +3510,7 @@ dependencies = [
  "file_processing",
  "polars",
  "predicates",
+ "regex",
  "shellexpand",
 ]
 

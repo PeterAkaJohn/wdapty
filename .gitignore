@@ -2,3 +2,4 @@
 /test_results
 **/generated/*[.parq,.csv]
 **/tests/results/*[.parq,.csv]
+wdapty.ini
