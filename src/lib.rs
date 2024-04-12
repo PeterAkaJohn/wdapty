@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use clap::Parser;
+use clap::{Parser, Subcommand};
 use file_processing::dataframe::{parq::ParqProcessor, file::handle_output, processor::Runnable};
 use input::handle_pattern;
 use polars::lazy::prelude::*;
@@ -8,22 +8,51 @@ mod input;
 
 #[derive(Parser, Debug)]
 struct CliArgs {
-    #[arg(long)]
-    index_name: Option<String>,
-    #[arg(long)]
-    index_value: Option<String>,
-    #[arg(long, num_args = 1..)]
-    cols: Option<Vec<String>>,
-    #[arg(long)]
-    file_name: Option<PathBuf>,
-    #[arg(long)]
-    output_file: Option<String>,
-    #[arg(long, short, default_value = "parq")]
-    execution_type: String,
-    #[arg(long, short)]
-    profile: Option<String>,
-    #[arg(long, action)]
-    pattern: bool
+    #[command(subcommand)]
+    command: Commands
+}
+
+
+#[derive(Debug, Subcommand)]
+enum Commands {
+    #[command(arg_required_else_help = true)]
+    Download {
+        #[arg(long)]
+        file_name: Option<PathBuf>,
+        #[arg(long)]
+        output_file: Option<String>,
+        #[arg(long, short, default_value = "parq")]
+        execution_type: String,
+        #[arg(long, num_args = 1..)]
+        cols: Option<Vec<String>>,
+        #[arg(long, short)]
+        profile: Option<String>,
+        #[arg(long, action)]
+        pattern: bool,
+        #[arg(long, action)]
+        load_config: bool
+    },
+    #[command(arg_required_else_help = true)]
+    Search {
+        #[arg(long)]
+        index_name: Option<String>,
+        #[arg(long)]
+        index_value: Option<String>,
+        #[arg(long)]
+        file_name: Option<PathBuf>,
+        #[arg(long)]
+        output_file: Option<String>,
+        #[arg(long, short, default_value = "parq")]
+        execution_type: String,
+        #[arg(long, num_args = 1..)]
+        cols: Option<Vec<String>>,
+        #[arg(long, short)]
+        profile: Option<String>,
+        #[arg(long, action)]
+        pattern: bool,
+        #[arg(long, action)]
+        load_config: bool
+    }
 }
 
 enum Processors<'a> {
@@ -41,24 +70,49 @@ impl Runnable for Processors<'_> {
 pub fn run() -> Result<()> {
     let args = CliArgs::parse();
 
-    let file_name = if args.pattern {
-        let file_name_from_pattern: PathBuf = handle_pattern()?.into();
-        Some(file_name_from_pattern)
-    } else {
-        args.file_name
-    }.unwrap();
+    match args.command {
+        Commands::Download { file_name, output_file, execution_type, cols, profile, pattern, .. } => {
+            println!("Running Download");
+            let file_name = if pattern {
+                let file_name_from_pattern: PathBuf = handle_pattern()?.into();
+                Some(file_name_from_pattern)
+            } else {
+                file_name
+            }.unwrap();
+        
+            let processor = match execution_type.as_str() {
+                "parq" => Processors::Parq(ParqProcessor::new(None, None, cols, file_name, profile.as_deref())),
+                _ => return Err(anyhow::anyhow!("Invalid Execution type")),
+            };
+        
+            let result_df = processor
+                .run()
+                .with_context(|| format!("Failed to run processor"))?
+                .collect()?;
+        
+            handle_output(output_file, result_df)
+        },
+        Commands::Search { index_name, index_value, file_name, output_file, execution_type, cols, profile, pattern, .. } => {
+            println!("Running Search Command");
+            let file_name = if pattern {
+                let file_name_from_pattern: PathBuf = handle_pattern()?.into();
+                Some(file_name_from_pattern)
+            } else {
+                file_name
+            }.unwrap();
+        
+            let processor = match execution_type.as_str() {
+                "parq" => Processors::Parq(ParqProcessor::new(index_name, index_value, cols, file_name, profile.as_deref())),
+                _ => return Err(anyhow::anyhow!("Invalid Execution type")),
+            };
+        
+            let result_df = processor
+                .run()
+                .with_context(|| format!("Failed to run processor"))?
+                .collect()?;
+        
+            handle_output(output_file, result_df)
+        },
+    }
 
-    println!("{}", file_name.display());
-
-    let processor = match args.execution_type.as_str() {
-        "parq" => Processors::Parq(ParqProcessor::new(args.index_name, args.index_value, args.cols, file_name, args.profile.as_deref())),
-        _ => return Err(anyhow::anyhow!("Invalid Execution type")),
-    };
-
-    let result_df = processor
-        .run()
-        .with_context(|| format!("Failed to run processor"))?
-        .collect()?;
-
-    handle_output(args.output_file, result_df)
 }
