@@ -15,7 +15,7 @@ pub struct ParqProcessor<'a> {
     pub index_value: Option<String>,
     pub cols: Option<Vec<String>>,
     pub file_name: PathBuf,
-    pub profile: &'a str,
+    pub profile: Option<&'a str>,
 }
 
 impl<'a> ParqProcessor<'a> {
@@ -24,7 +24,7 @@ impl<'a> ParqProcessor<'a> {
         index_value: Option<String>,
         cols: Option<Vec<String>>,
         file_name: PathBuf,
-        profile: &'a str,
+        profile: Option<&'a str>,
     ) -> Self {
         let file_name = if file_name.starts_with("~") {
             let expanded_path =
@@ -46,7 +46,7 @@ impl<'a> ParqProcessor<'a> {
 impl ScanFile for ParqProcessor<'_> {
     fn scan(&self) -> Result<LazyFrame> {
         if self.file_name.starts_with("s3://") {
-            let credentials = get_credentials("aws", Some(self.profile), None)?;
+            let credentials = get_credentials("aws", self.profile, None)?;
             let cloud_options = cloud::CloudOptions::default().with_aws([
                 (Key::AccessKeyId, &credentials.access_key_id),
                 (Key::SecretAccessKey, &credentials.secret_access_key),
@@ -154,7 +154,7 @@ mod tests {
         assert!(test_file_path.is_ok());
         let test_file_path = test_file_path.unwrap();
         let test_file_path = PathBuf::from(test_file_path);
-        let processor = ParqProcessor::new(None, None, None, test_file_path);
+        let processor = ParqProcessor::new(None, None, None, test_file_path, None);
         let result = processor.scan();
         assert!(result.is_ok());
         let lazy_frame = result.unwrap();
@@ -167,7 +167,7 @@ mod tests {
         assert!(test_file_path.is_ok());
         let test_file_path = test_file_path.unwrap();
         let test_file_path = PathBuf::from(test_file_path);
-        let processor = ParqProcessor::new(None, None, None, test_file_path);
+        let processor = ParqProcessor::new(None, None, None, test_file_path, None);
         let result = processor.run();
         assert!(result.is_ok());
         let lazy_frame = result.unwrap();

@@ -18,8 +18,8 @@ struct CliArgs {
     output_file: Option<String>,
     #[arg(long, short, default_value = "parq")]
     execution_type: String,
-    #[arg(long, short, default_value="default")]
-    profile: String,
+    #[arg(long, short)]
+    profile: Option<String>,
 }
 
 enum Processors<'a> {
@@ -38,7 +38,7 @@ pub fn run() -> Result<()> {
     let args = CliArgs::parse();
 
     let processor = match args.execution_type.as_str() {
-        "parq" => Processors::Parq(ParqProcessor::new(args.index_name, args.index_value, args.cols, args.file_name, &args.profile)),
+        "parq" => Processors::Parq(ParqProcessor::new(args.index_name, args.index_value, args.cols, args.file_name, args.profile.as_deref())),
         _ => return Err(anyhow::anyhow!("Invalid Execution type")),
     };
 
