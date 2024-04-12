@@ -1,4 +1,4 @@
-workspace = { members = ["file_processing"] }
+workspace = { members = [ "credentials","file_processing"] }
 [package]
 name = "wdapty"
 version = "0.1.0"
@@ -10,9 +10,7 @@ edition = "2021"
 anyhow = "1.0.81"
 clap = { version = "4.5.4", features = ["derive"] }
 clap-verbosity-flag = "2.2.0"
-env_logger = "0.11.3"
-log = "0.4.21"
-polars = { version = "0.38.3", features = ["lazy", "parquet"] }
+polars = { version = "0.38.3", features = ["lazy", "parquet", "cloud"] }
 shellexpand = "3.1.0"
 file_processing = {path = "./file_processing"}
 

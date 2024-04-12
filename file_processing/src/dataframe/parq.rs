@@ -1,27 +1,30 @@
 use std::path::PathBuf;
 
 use anyhow::{Context, Ok, Result};
-use polars::lazy::{dsl::col, frame::LazyFrame};
-
+use credentials::get_credentials;
+use cloud::AmazonS3ConfigKey as Key;
+use polars::{io::cloud, lazy::{dsl::col, frame::{LazyFrame, ScanArgsParquet}}};
 use super::{
     expressions::get_index_expr_if_needed,
     operations::filter_columns,
     processor::{Runnable, ScanFile},
 };
 
-pub struct ParqProcessor {
+pub struct ParqProcessor<'a> {
     pub index_name: Option<String>,
     pub index_value: Option<String>,
     pub cols: Option<Vec<String>>,
     pub file_name: PathBuf,
+    pub profile: &'a str,
 }
 
-impl ParqProcessor {
+impl<'a> ParqProcessor<'a> {
     pub fn new(
         index_name: Option<String>,
         index_value: Option<String>,
         cols: Option<Vec<String>>,
         file_name: PathBuf,
+        profile: &'a str,
     ) -> Self {
         let file_name = if file_name.starts_with("~") {
             let expanded_path =
@@ -35,18 +38,35 @@ impl ParqProcessor {
             index_value,
             cols,
             file_name,
+            profile,
         };
     }
 }
 
-impl ScanFile for ParqProcessor {
+impl ScanFile for ParqProcessor<'_> {
     fn scan(&self) -> Result<LazyFrame> {
-        return LazyFrame::scan_parquet(&self.file_name, Default::default())
-            .with_context(|| format!("File does not exist"));
+        if self.file_name.starts_with("s3://") {
+            let credentials = get_credentials("aws", Some(self.profile), None)?;
+            let cloud_options = cloud::CloudOptions::default().with_aws([
+                (Key::AccessKeyId, &credentials.access_key_id),
+                (Key::SecretAccessKey, &credentials.secret_access_key),
+                (Key::Region, &credentials.region),
+                (Key::Token, &credentials.session_token)
+            ]);
+            let args = ScanArgsParquet {
+                cloud_options: Some(cloud_options),
+                ..Default::default()
+            };
+            return LazyFrame::scan_parquet(&self.file_name, args)
+                .with_context(|| format!("File does not exist. Might need to pass --profile option"));
+        } else {
+            return LazyFrame::scan_parquet(&self.file_name, Default::default())
+                .with_context(|| format!("File does not exist"));
+        }
     }
 }
 
-impl Runnable for ParqProcessor {
+impl Runnable for ParqProcessor<'_> {
     fn run(&self) -> Result<LazyFrame> {
         let index_name = &self.index_name;
         let index_value = &self.index_value;

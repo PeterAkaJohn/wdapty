@@ -15,10 +15,9 @@ pub fn handle_output(output_file: Option<String>, mut df: polars::prelude::DataF
     })
 }
 
-
 #[cfg(test)]
 mod test {
-    use polars::{frame::DataFrame, prelude::NamedFrom, series::Series};
+    use polars::{frame::DataFrame, io::cloud::{AmazonS3ConfigKey, CloudOptions}, prelude::NamedFrom, series::Series};
 
     use crate::generated_test_files_path;
 

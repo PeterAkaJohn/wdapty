@@ -63,8 +63,9 @@ mod tests {
         assert_eq!(hour, 17);
         assert_eq!(minute, 02);
         assert_eq!(second, 00);
+
     }
-    
+
     #[test]
     fn check_extract_date_parts_throws() {
         assert!(extract_date_parts("2024-01 17:02:00").is_err());
@@ -74,5 +75,6 @@ mod tests {
         assert!(extract_date_parts("2024-01 17:02").is_err());
         assert!(extract_date_parts("2024-01 17:02:").is_err());
     }
+    
 }
 

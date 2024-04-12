@@ -18,13 +18,15 @@ struct CliArgs {
     output_file: Option<String>,
     #[arg(long, short, default_value = "parq")]
     execution_type: String,
+    #[arg(long, short, default_value="default")]
+    profile: String,
 }
 
-enum Processors {
-    Parq(ParqProcessor),
+enum Processors<'a> {
+    Parq(ParqProcessor<'a>),
 }
 
-impl Runnable for Processors {
+impl Runnable for Processors<'_> {
     fn run(&self) -> Result<LazyFrame> {
         match self {
             Processors::Parq(parq_processor) => return parq_processor.run(),
@@ -36,7 +38,7 @@ pub fn run() -> Result<()> {
     let args = CliArgs::parse();
 
     let processor = match args.execution_type.as_str() {
-        "parq" => Processors::Parq(ParqProcessor::new(args.index_name, args.index_value, args.cols, args.file_name)),
+        "parq" => Processors::Parq(ParqProcessor::new(args.index_name, args.index_value, args.cols, args.file_name, &args.profile)),
         _ => return Err(anyhow::anyhow!("Invalid Execution type")),
     };
 
