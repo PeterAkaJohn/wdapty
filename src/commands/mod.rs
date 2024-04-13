@@ -1,23 +1,20 @@
 use anyhow::{anyhow, Context, Result};
-use core::result::Result::Ok;
 use regex::Regex;
 use std::{collections::HashMap, fs, io, path::PathBuf};
 
 fn expand_config_path(path: &str) -> Result<PathBuf> {
-    return shellexpand::tilde(path).parse::<PathBuf>().with_context(|| format!("Failed to expand config path {}", path));
-
+    return shellexpand::tilde(path)
+        .parse::<PathBuf>()
+        .with_context(|| format!("Failed to expand config path {}", path));
 }
 
-fn parse_config_file_for_pattern() -> Result<String> {
-    // will create a command that generates this, for now it's in the root
+fn parse_config_file_for_pattern(pattern_name: &str) -> Result<String> {
     let config_path = expand_config_path("~/.wdapty/config.ini")?;
-
     let file = fs::read_to_string(config_path)?;
-
     let pattern = file
         .lines()
         .filter_map(|line| {
-            if line.contains("pattern") {
+            if line.contains(pattern_name) {
                 let mut line_parts = line.splitn(2, "=");
                 let property = line_parts.next()?.trim().to_string();
                 let value = line_parts.next()?.trim().to_string();
@@ -29,9 +26,9 @@ fn parse_config_file_for_pattern() -> Result<String> {
         .collect::<HashMap<String, String>>();
 
     return pattern
-        .get("pattern")
+        .get(pattern_name)
         .map(|pat| pat.to_string())
-        .ok_or(anyhow!("No property named pattern in wdapty.ini"));
+        .ok_or(anyhow!("No property named {} in wdapty.ini", pattern_name));
 }
 
 fn collect_user_input_from_pattern(pattern: &str) -> Vec<String> {
@@ -63,14 +60,12 @@ fn fill_pattern_with_variables(pattern: &str, user_input: HashMap<String, String
     return result;
 }
 
-pub fn handle_pattern() -> Result<String> {
-    let pattern = parse_config_file_for_pattern();
-    if let Ok(pat) = pattern {
+pub fn handle_pattern(pattern_name: &str) -> Result<String> {
+    return parse_config_file_for_pattern(pattern_name).map(|pat| {
         let variables_to_ask = collect_user_input_from_pattern(&pat);
         let user_filled_variables = ask_user_variables_value(variables_to_ask);
-        return Ok(fill_pattern_with_variables(&pat, user_filled_variables));
-    }
-    return Err(anyhow!("Failed in handling pattern"));
+        fill_pattern_with_variables(&pat, user_filled_variables)
+    }).with_context(|| format!("Failed to handle pattern {}", pattern_name));
 }
 
 #[cfg(test)]
