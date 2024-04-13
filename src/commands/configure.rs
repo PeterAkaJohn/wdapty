@@ -24,6 +24,7 @@ pub fn create_config_file() -> Result<(String, File)> {
 
 pub fn save_patterns_to_config(patterns: Vec<String>, mut file: File) -> Result<bool> {
     for pattern in patterns {
+        println!("Saving pattern {} to config.ini", pattern);
         file.write(format!("{}\n", pattern).as_bytes())
             .with_context(|| format!("Failed to save pattern {}", pattern))?;
     }
@@ -31,19 +32,24 @@ pub fn save_patterns_to_config(patterns: Vec<String>, mut file: File) -> Result<
     Ok(true)
 }
 
-pub fn initialize() -> Result<String> {
+pub fn initialize(starting_patterns: Option<Vec<String>>) -> Result<String> {
     let (app_config_path, file) = create_config_file()?;
     println!("Fill in your config with yout pattern, must be in the format name=something, type x to exit");
-    let mut patterns: Vec<String> = vec![];
-    loop {
-        let mut input = String::new();
-        println!("Paste your file pattern that you want to use one at the time");
-        let _ = io::stdin().read_line(&mut input);
-        if input.trim() == "x" {
-            break;
+    let patterns: Vec<String> = if let Some(st_patterns) = starting_patterns {
+        st_patterns
+    } else {
+        let mut new_patterns = vec![];
+        loop {
+            let mut input = String::new();
+            println!("Paste your file pattern that you want to use one at the time");
+            let _ = io::stdin().read_line(&mut input);
+            if input.trim() == "x" {
+                break;
+            }
+            new_patterns.push(input.trim().to_string());
         }
-        patterns.push(input.trim().to_string());
-    }
+        new_patterns
+    };
 
     save_patterns_to_config(patterns, file)?;
 

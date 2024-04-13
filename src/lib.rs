@@ -28,7 +28,7 @@ struct DefaultProcessingOpts {
 enum Commands {
     Configure {
         #[arg(long)]
-        pattern: Option<Vec<String>>,
+        patterns: Option<Vec<String>>,
     },
     #[command(arg_required_else_help = true)]
     #[command(subcommand)]
@@ -74,8 +74,8 @@ impl Runnable for Processors<'_> {
 pub fn run() -> Result<()> {
     let args = CliArgs::parse();
     match args.command {
-        Commands::Configure { .. } => {
-            let config_path = initialize()?;
+        Commands::Configure { patterns } => {
+            let config_path = initialize(patterns)?;
             println!("Saved config.ini in {}", config_path);
             Ok(())
         }
