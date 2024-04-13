@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use clap::{Args, Parser, Subcommand};
-use commands::{configure::initialize, handle_pattern};
+use commands::{configure::initialize, handle_pattern, pattern::get_patterns_available};
 use file_processing::dataframe::{file::handle_output, parq::ParqProcessor, processor::Runnable};
 use polars::lazy::prelude::*;
 use std::path::PathBuf;
@@ -30,6 +30,7 @@ enum Commands {
         #[arg(long)]
         patterns: Option<Vec<String>>,
     },
+    Patterns,
     #[command(arg_required_else_help = true)]
     #[command(subcommand)]
     Processing(ProcessingCommands),
@@ -153,6 +154,18 @@ pub fn run() -> Result<()> {
 
             handle_output(output_file, result_df)
         }
+        Commands::Patterns => {
+            let patterns_available = get_patterns_available();
+            patterns_available.map(|available| {
+                if available.keys().len() > 0 {
+                    for (key,value) in available {
+                        println!("Pattern {} has value {}", key, value);
+                    }
+                } else {
+                    println!("No patterns available in config.ini");
+                };
+            })
+        },
     }
 }
 
