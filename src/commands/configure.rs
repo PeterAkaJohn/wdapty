@@ -1,5 +1,5 @@
 use std::{
-    fs::{create_dir_all, File},
+    fs::{create_dir_all, File, OpenOptions},
     io::{self, Write},
     path::PathBuf,
 };
@@ -14,7 +14,10 @@ pub fn create_config_file() -> Result<(String, File)> {
         .with_context(|| format!("Failed to extract parent from {}", expanded_path.display()))?;
     create_dir_all(prefix)
         .with_context(|| format!("Failed to create config dir {}", prefix.display()))?;
-    let file = File::create(expanded_path)
+    let file = OpenOptions::new()
+        .append(true)
+        .create(true)
+        .open(&expanded_path)
         .with_context(|| format!("Failed at File::Create {}", &app_config_path))?;
     Ok((app_config_path.to_string(), file))
 }
