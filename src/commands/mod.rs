@@ -1,3 +1,5 @@
+pub mod configure;
+pub mod pattern;
 use anyhow::{anyhow, Context, Result};
 use regex::Regex;
 use std::{collections::HashMap, fs, io, path::PathBuf};
@@ -8,9 +10,18 @@ fn expand_config_path(path: &str) -> Result<PathBuf> {
         .with_context(|| format!("Failed to expand config path {}", path));
 }
 
-fn parse_config_file_for_pattern(pattern_name: &str) -> Result<String> {
+fn read_config_file() -> Result<String> {
     let config_path = expand_config_path("~/.wdapty/config.ini")?;
-    let file = fs::read_to_string(config_path)?;
+    Ok(fs::read_to_string(config_path)?)
+}
+
+fn does_pattern_match_pattern_format(pattern: &str) -> bool {
+    let pattern_format = Regex::new(r"^\w+=([^\s\n]+)$").unwrap();
+    return pattern_format.is_match(pattern)
+}
+
+fn parse_config_file_for_pattern(pattern_name: &str) -> Result<String> {
+    let file = read_config_file()?;
     let pattern = file
         .lines()
         .filter_map(|line| {
@@ -73,6 +84,8 @@ mod test {
     use std::collections::HashMap;
 
     use crate::commands::{collect_user_input_from_pattern, fill_pattern_with_variables};
+
+    use super::does_pattern_match_pattern_format;
     #[test]
     fn test_collect_user_input_from_pattern() {
         let pattern = "{test1}/{test2}/{test3}";
@@ -90,6 +103,13 @@ mod test {
         let result = fill_pattern_with_variables(pattern, user_input);
         assert_eq!(result, "test1value/test2value/test3value");
     }
-}
 
-pub mod configure;
+    #[test]
+    fn test_does_pattern_match_pattern_format() {
+        let pattern = "amazingtestname=s3://somethingsomthineasdas//asas//assa/{asdasd}/{asdas}";
+        assert!(does_pattern_match_pattern_format(pattern));
+
+        let pattern = "amazingtestname=s3://somethingsomthin easdas//asas//assa/{asdasd}/{asdas}";
+        assert!(does_pattern_match_pattern_format(pattern) == false);
+    }
+}

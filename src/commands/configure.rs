@@ -5,7 +5,8 @@ use std::{
 };
 
 use anyhow::{anyhow, Context, Ok, Result};
-use regex::Regex;
+
+use super::does_pattern_match_pattern_format;
 
 pub fn create_config_file() -> Result<(String, File)> {
     let app_config_path = "~/.wdapty/config.ini";
@@ -35,11 +36,6 @@ pub fn save_patterns_to_config(patterns: Vec<String>, mut file: File) -> Result<
     }
 
     Ok(true)
-}
-
-fn does_pattern_match_pattern_format(pattern: &str) -> bool {
-    let pattern_format = Regex::new(r"^\w+=\w+$").unwrap();
-    return pattern_format.is_match(pattern)
 }
 
 pub fn initialize(starting_patterns: Option<Vec<String>>) -> Result<String> {
