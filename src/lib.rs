@@ -1,22 +1,19 @@
 use anyhow::{Context, Result};
 use clap::{Args, Parser, Subcommand};
 use file_processing::dataframe::{file::handle_output, parq::ParqProcessor, processor::Runnable};
-use input::handle_pattern;
+use commands::{configure::initialize, handle_pattern};
 use polars::lazy::prelude::*;
 use std::path::PathBuf;
-mod input;
+mod commands;
 
 #[derive(Parser, Debug)]
 struct CliArgs {
     #[command(subcommand)]
     command: Commands,
-
-    #[command(flatten)]
-    defaults: DefaultOpts,
 }
 
 #[derive(Debug, Args)]
-struct DefaultOpts {
+struct DefaultProcessingOpts {
     #[arg(long, short)]
     profile: Option<String>,
     #[arg(long, action)]
@@ -32,20 +29,36 @@ struct DefaultOpts {
 #[derive(Debug, Subcommand)]
 enum Commands {
     #[command(arg_required_else_help = true)]
+    #[command(subcommand)]
+    Processing(ProcessingCommands),
+
+    #[command(arg_required_else_help = true)]
+    Configure {
+        
+    }
+}
+
+#[derive(Debug, Subcommand)]
+enum ProcessingCommands {
+    #[command(arg_required_else_help = true)]
     Download {
         #[arg(long)]
         output_file: String,
+        #[command(flatten)]
+        defaults: DefaultProcessingOpts
     },
     #[command(arg_required_else_help = true)]
     Search {
         #[arg(long)]
-        index_name: Option<String>,
+        index_name: String,
         #[arg(long)]
-        index_value: Option<String>,
+        index_value: String,
         #[arg(long)]
         output_file: Option<String>,
         #[arg(long, num_args = 1..)]
         cols: Option<Vec<String>>,
+        #[command(flatten)]
+        defaults: DefaultProcessingOpts
     },
 }
 
@@ -63,45 +76,60 @@ impl Runnable for Processors<'_> {
 
 pub fn run() -> Result<()> {
     let args = CliArgs::parse();
-    let defaults = args.defaults;
-    let DefaultOpts {profile, file_name, execution_type, pattern, ..} = defaults;
-    let file_name = acquire_file_name(pattern, file_name)?;
 
-    let (index_name, index_value, cols, output_file) = match args.command {
-        Commands::Download {
-            output_file,
-        } => {
-            println!("Preparing for Download Command");
-            (None, None, None, Some(output_file))
-        }
-        Commands::Search {
-            index_name,
-            index_value,
-            output_file,
-            cols,
-        } => {
-            println!("Preparing for Search Command");
-            (index_name, index_value, cols, output_file)
-        }
-    };
+    match args.command {
+        Commands::Configure {  } => {
+            let config_path = initialize()?;
+            println!("Saved config.ini in {}", config_path);
+            Ok(())
+        },
+        Commands::Processing(subcom) => {
+            let (index_name, index_value, cols, output_file, file_name, execution_type, profile) = match subcom {
+                ProcessingCommands::Download {
+                    output_file,
+                    defaults
+                } => {
+                    let defaults = defaults;
+                    let DefaultProcessingOpts {profile, file_name, execution_type, pattern, ..} = defaults;
+                    let file_name = acquire_file_name(pattern, file_name)?;
+                    println!("Preparing for Download Command");
+                    (None, None, None, Some(output_file), file_name, execution_type, profile)
+                }
+                ProcessingCommands::Search {
+                    index_name,
+                    index_value,
+                    output_file,
+                    cols,
+                    defaults
+                } => {
+                    let defaults = defaults;
+                    let DefaultProcessingOpts {profile, file_name, execution_type, pattern, ..} = defaults;
+                    let file_name = acquire_file_name(pattern, file_name)?;
+                    println!("Preparing for Search Command");
+                    (Some(index_name), Some(index_value), cols, output_file, file_name, execution_type, profile)
+                }
+            };
 
-    let processor = match execution_type.as_str() {
-        "parq" => Processors::Parq(ParqProcessor::new(
-            index_name,
-            index_value,
-            cols,
-            file_name,
-            profile.as_deref(),
-        )),
-        _ => return Err(anyhow::anyhow!("Invalid Execution type")),
-    };
+            let processor = match execution_type.as_str() {
+                "parq" => Processors::Parq(ParqProcessor::new(
+                    index_name,
+                    index_value,
+                    cols,
+                    file_name,
+                    profile.as_deref(),
+                )),
+                _ => return Err(anyhow::anyhow!("Invalid Execution type")),
+            };
+        
+            let result_df = processor
+                .run()
+                .with_context(|| format!("Failed to run processor"))?
+                .collect()?;
+        
+            handle_output(output_file, result_df)
 
-    let result_df = processor
-        .run()
-        .with_context(|| format!("Failed to run processor"))?
-        .collect()?;
-
-    handle_output(output_file, result_df)
+        },
+    }
 }
 
 fn acquire_file_name(pattern: bool, file_name: Option<PathBuf>) -> Result<PathBuf, anyhow::Error> {

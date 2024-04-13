@@ -71,7 +71,7 @@ pub fn handle_pattern() -> Result<String> {
 mod test {
     use std::collections::HashMap;
 
-    use crate::input::{collect_user_input_from_pattern, fill_pattern_with_variables};
+    use crate::commands::{collect_user_input_from_pattern, fill_pattern_with_variables};
     #[test]
     fn test_collect_user_input_from_pattern() {
         let pattern = "{test1}/{test2}/{test3}";
@@ -90,3 +90,5 @@ mod test {
         assert_eq!(result, "test1value/test2value/test3value");
     }
 }
+
+pub mod configure;
