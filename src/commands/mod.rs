@@ -1,11 +1,17 @@
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use core::result::Result::Ok;
 use regex::Regex;
-use std::{collections::HashMap, fs, io};
+use std::{collections::HashMap, fs, io, path::PathBuf};
+
+fn expand_config_path(path: &str) -> Result<PathBuf> {
+    return shellexpand::tilde(path).parse::<PathBuf>().with_context(|| format!("Failed to expand config path {}", path));
+
+}
 
 fn parse_config_file_for_pattern() -> Result<String> {
     // will create a command that generates this, for now it's in the root
-    let config_path = "./wdapty.ini";
+    let config_path = expand_config_path("~/.wdapty/config.ini")?;
+
     let file = fs::read_to_string(config_path)?;
 
     let pattern = file
