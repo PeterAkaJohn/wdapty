@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use anyhow::{Context, Ok, Result};
+use anyhow::{anyhow, Context, Ok, Result};
 use credentials::get_credentials;
 use cloud::AmazonS3ConfigKey as Key;
 use polars::{io::cloud, lazy::{dsl::col, frame::{LazyFrame, ScanArgsParquet}}};
@@ -47,7 +47,8 @@ impl ScanFile for ParqProcessor<'_> {
     fn scan(&self) -> Result<LazyFrame> {
         if self.file_name.starts_with("s3://") {
             let credentials = get_credentials("aws", self.profile, None)?;
-            let cloud_options = cloud::CloudOptions::default().with_aws([
+            let cloud_options = cloud::CloudOptions::default()
+            .with_aws([
                 (Key::AccessKeyId, &credentials.access_key_id),
                 (Key::SecretAccessKey, &credentials.secret_access_key),
                 (Key::Region, &credentials.region),
@@ -79,8 +80,12 @@ impl Runnable for ParqProcessor<'_> {
         match (index_name, index_value) {
             (Some(idx_name), Some(idx_value)) => {
                 let index_expr = get_index_expr_if_needed(idx_name, idx_value)?;
-                Ok(filter_columns(lf1, &exprs).filter(index_expr))
-            }
+                let lf1 = filter_columns(lf1.filter(index_expr), &exprs);
+                Ok(lf1)
+            },
+            (None, Some(_)) | (Some(_), None) => {
+                return Err(anyhow!("Search failed. Either index-name or index-value is missing"));
+            },
             _ => Ok(filter_columns(lf1, &exprs)),
         }
     }
