@@ -1,9 +1,11 @@
 use anyhow::{Context, Result};
 use clap::{Args, Parser, Subcommand};
-use commands::{configure::initialize, handle_pattern, pattern::get_patterns_available};
+use commands::{configure::initialize, handle_pattern, pattern::get_available_patterns};
 use file_processing::dataframe::{file::handle_output, parq::ParqProcessor, processor::Runnable};
 use polars::lazy::prelude::*;
 use std::path::PathBuf;
+
+use crate::commands::pattern::{add_pattern_to_config, remove_pattern_from_config};
 mod commands;
 
 #[derive(Parser, Debug)]
@@ -30,10 +32,28 @@ enum Commands {
         #[arg(long)]
         patterns: Option<Vec<String>>,
     },
-    Patterns,
+    #[command(subcommand)]
+    Patterns(PatternsCommands),
     #[command(arg_required_else_help = true)]
     #[command(subcommand)]
     Processing(ProcessingCommands),
+}
+
+#[derive(Debug, Subcommand)]
+enum PatternsCommands {
+    List,
+    #[command(arg_required_else_help = true)]
+    Add {
+        #[arg(long)]
+        name: String,
+        #[arg(long)]
+        value: String
+    },
+    #[command(arg_required_else_help = true)]
+    Remove {
+        #[arg(long)]
+        name: String
+    }
 }
 
 #[derive(Debug, Subcommand)]
@@ -154,17 +174,29 @@ pub fn run() -> Result<()> {
 
             handle_output(output_file, result_df)
         }
-        Commands::Patterns => {
-            let patterns_available = get_patterns_available();
-            patterns_available.map(|available| {
-                if available.keys().len() > 0 {
-                    for (key,value) in available {
-                        println!("Pattern {} has value {}", key, value);
-                    }
-                } else {
-                    println!("No patterns available in config.ini");
-                };
-            })
+        Commands::Patterns(subcom) => {
+            match subcom {
+                PatternsCommands::List => {
+                    let patterns_available = get_available_patterns();
+                    patterns_available.map(|available| {
+                        if available.keys().len() > 0 {
+                            for (key,value) in available {
+                                println!("Pattern {} has value {}", key, value);
+                            }
+                        } else {
+                            println!("No patterns available in config.ini");
+                        };
+                    })
+                },
+                PatternsCommands::Add { name, value } => {
+                    println!("Performing Add Pattern with name {} and value {}", name, value);
+                    add_pattern_to_config(name, value)
+                },
+                PatternsCommands::Remove { name } => {
+                    println!("Performing Remove Pattern with name {}", name);
+                    remove_pattern_from_config(name)
+                },
+            }
         },
     }
 }

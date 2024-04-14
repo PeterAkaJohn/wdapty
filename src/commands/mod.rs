@@ -2,7 +2,7 @@ pub mod configure;
 pub mod pattern;
 use anyhow::{anyhow, Context, Result};
 use regex::Regex;
-use std::{collections::HashMap, fs, io, path::PathBuf};
+use std::{collections::HashMap, fs::{self, File}, io::{self, Write}, path::PathBuf};
 
 fn expand_config_path(path: &str) -> Result<PathBuf> {
     return shellexpand::tilde(path)
@@ -69,6 +69,24 @@ fn fill_pattern_with_variables(pattern: &str, user_input: HashMap<String, String
         result = result.replace(&format!("{{{}}}", key), &value.trim());
     }
     return result;
+}
+
+pub fn save_patterns_to_config(patterns: Vec<String>, mut file: File) -> Result<bool> {
+    for pattern in patterns {
+        save_pattern_to_config(pattern, &mut file)?;
+    }
+
+    Ok(true)
+}
+
+fn save_pattern_to_config(pattern: String, file: &mut File) -> Result<(), anyhow::Error> {
+    Ok(if does_pattern_match_pattern_format(&pattern) {
+        println!("Saving pattern {} to config.ini", pattern);
+        file.write(format!("{}\n", pattern).as_bytes())
+            .with_context(|| format!("Failed to save pattern {}", pattern))?;
+    } else {
+        return Err(anyhow!("Pattern {} is not compliant with pattern_format name=value", pattern));
+    })
 }
 
 pub fn handle_pattern(pattern_name: &str) -> Result<String> {

@@ -1,14 +1,15 @@
 use std::{
     fs::{create_dir_all, File, OpenOptions},
-    io::{self, Write},
+    io::{self},
     path::PathBuf,
 };
 
-use anyhow::{anyhow, Context, Ok, Result};
+use anyhow::{Context, Ok, Result};
 
-use super::does_pattern_match_pattern_format;
+use super::save_patterns_to_config;
 
-pub fn create_config_file() -> Result<(String, File)> {
+
+pub fn get_config_file() -> Result<(String, File)> {
     let app_config_path = "~/.wdapty/config.ini";
     let expanded_path: PathBuf = shellexpand::tilde(app_config_path).to_string().into();
     let prefix = expanded_path
@@ -24,22 +25,8 @@ pub fn create_config_file() -> Result<(String, File)> {
     Ok((app_config_path.to_string(), file))
 }
 
-pub fn save_patterns_to_config(patterns: Vec<String>, mut file: File) -> Result<bool> {
-    for pattern in patterns {
-        if does_pattern_match_pattern_format(&pattern) {
-            println!("Saving pattern {} to config.ini", pattern);
-            file.write(format!("{}\n", pattern).as_bytes())
-                .with_context(|| format!("Failed to save pattern {}", pattern))?;
-        } else {
-            return Err(anyhow!("Pattern {} is not compliant with pattern_format name=value", pattern));
-        }
-    }
-
-    Ok(true)
-}
-
 pub fn initialize(starting_patterns: Option<Vec<String>>) -> Result<String> {
-    let (app_config_path, file) = create_config_file()?;
+    let (app_config_path, file) = get_config_file()?;
     let patterns: Vec<String> = if let Some(st_patterns) = starting_patterns {
         st_patterns
     } else {
