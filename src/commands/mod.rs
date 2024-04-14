@@ -2,7 +2,12 @@ pub mod configure;
 pub mod pattern;
 use anyhow::{anyhow, Context, Result};
 use regex::Regex;
-use std::{collections::HashMap, fs::{self, File}, io::{self, Write}, path::PathBuf};
+use std::{
+    collections::HashMap,
+    fs::{self, File},
+    io::{self, Write},
+    path::PathBuf,
+};
 
 fn expand_config_path(path: &str) -> Result<PathBuf> {
     return shellexpand::tilde(path)
@@ -17,7 +22,7 @@ fn read_config_file() -> Result<String> {
 
 fn does_pattern_match_pattern_format(pattern: &str) -> bool {
     let pattern_format = Regex::new(r"^\w+=([^\s\n]+)$").unwrap();
-    return pattern_format.is_match(pattern)
+    return pattern_format.is_match(pattern);
 }
 
 fn parse_config_file_for_pattern(pattern_name: &str) -> Result<String> {
@@ -79,22 +84,33 @@ pub fn save_patterns_to_config(patterns: Vec<String>, mut file: File) -> Result<
     Ok(true)
 }
 
+pub fn save_patterns_to_config_with_overwrite(patterns: Vec<String>, file: File) -> Result<bool> {
+    let _ = file.set_len(0);
+    let _ = save_patterns_to_config(patterns, file);
+    Ok(true)
+}
+
 fn save_pattern_to_config(pattern: String, file: &mut File) -> Result<(), anyhow::Error> {
     Ok(if does_pattern_match_pattern_format(&pattern) {
         println!("Saving pattern {} to config.ini", pattern);
         file.write(format!("{}\n", pattern).as_bytes())
             .with_context(|| format!("Failed to save pattern {}", pattern))?;
     } else {
-        return Err(anyhow!("Pattern {} is not compliant with pattern_format name=value", pattern));
+        return Err(anyhow!(
+            "Pattern {} is not compliant with pattern_format name=value",
+            pattern
+        ));
     })
 }
 
 pub fn handle_pattern(pattern_name: &str) -> Result<String> {
-    return parse_config_file_for_pattern(pattern_name).map(|pat| {
-        let variables_to_ask = collect_user_input_from_pattern(&pat);
-        let user_filled_variables = ask_user_variables_value(variables_to_ask);
-        fill_pattern_with_variables(&pat, user_filled_variables)
-    }).with_context(|| format!("Failed to handle pattern {}", pattern_name));
+    return parse_config_file_for_pattern(pattern_name)
+        .map(|pat| {
+            let variables_to_ask = collect_user_input_from_pattern(&pat);
+            let user_filled_variables = ask_user_variables_value(variables_to_ask);
+            fill_pattern_with_variables(&pat, user_filled_variables)
+        })
+        .with_context(|| format!("Failed to handle pattern {}", pattern_name));
 }
 
 #[cfg(test)]
