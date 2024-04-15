@@ -47,13 +47,13 @@ enum PatternsCommands {
         #[arg(long)]
         name: String,
         #[arg(long)]
-        value: String
+        value: String,
     },
     #[command(arg_required_else_help = true)]
     Remove {
         #[arg(long)]
-        name: String
-    }
+        name: String,
+    },
 }
 
 #[derive(Debug, Subcommand)]
@@ -174,28 +174,29 @@ pub fn run() -> Result<()> {
 
             handle_output(output_file, result_df)
         }
-        Commands::Patterns(subcom) => {
-            match subcom {
-                PatternsCommands::List => {
-                    let patterns_available = get_available_patterns();
-                    patterns_available.map(|available| {
-                        if available.keys().len() > 0 {
-                            for (key,value) in available {
-                                println!("Pattern {} has value {}", key, value);
-                            }
-                        } else {
-                            println!("No patterns available in config.ini");
-                        };
-                    })
-                },
-                PatternsCommands::Add { name, value } => {
-                    println!("Performing Add Pattern with name {} and value {}", name, value);
-                    add_pattern_to_config(name, value)
-                },
-                PatternsCommands::Remove { name } => {
-                    println!("Performing Remove Pattern with name {}", name);
-                    remove_pattern_from_config(name)
-                },
+        Commands::Patterns(subcom) => match subcom {
+            PatternsCommands::List => {
+                let patterns_available = get_available_patterns();
+                patterns_available.map(|available| {
+                    if available.keys().len() > 0 {
+                        for (key, value) in available {
+                            println!("Pattern {} has value {}", key, value);
+                        }
+                    } else {
+                        println!("No patterns available in config.ini");
+                    };
+                })
+            }
+            PatternsCommands::Add { name, value } => {
+                println!(
+                    "Performing Add Pattern with name {} and value {}",
+                    name, value
+                );
+                add_pattern_to_config(name, value)
+            }
+            PatternsCommands::Remove { name } => {
+                println!("Performing Remove Pattern with name {}", name);
+                remove_pattern_from_config(name)
             }
         },
     }

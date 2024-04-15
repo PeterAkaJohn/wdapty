@@ -21,29 +21,38 @@ pub struct AwsCredentials {
 impl<'a> Aws<'a> {
     pub fn new(profile: Option<&'a str>, credentials_path: Option<String>) -> Self {
         let profile = profile.unwrap_or("default");
-        let credentials_path = credentials_path.unwrap_or_else(|| shellexpand::tilde("~/.aws/credentials").parse::<String>().unwrap());
-        return Aws { profile, credentials_path }
+        let credentials_path = credentials_path.unwrap_or_else(|| {
+            shellexpand::tilde("~/.aws/credentials")
+                .parse::<String>()
+                .unwrap()
+        });
+        return Aws {
+            profile,
+            credentials_path,
+        };
     }
-    
+
     fn extract_credentials_from_file(&self, file: String) -> HashMap<String, String> {
         let mut parsing = false;
         let re = Regex::new(r"\[.*\]").unwrap();
-        let credentials: HashMap<String, String> = file.lines().filter_map(|line| {
-            if line.contains(&format!("[{}]", self.profile)) {
-                parsing = true;
-            } else if re.is_match(line) {
-                parsing = false;
-            }
-            if parsing && !line.is_empty() {
-                let mut parts = line.trim().splitn(2, "=");
-                let property = parts.next()?.trim().to_string();
-                let value = parts.next()?.trim().to_string();
-                Some((property, value))
-            } else {
-                None
-            }
-        })
-        .collect();
+        let credentials: HashMap<String, String> = file
+            .lines()
+            .filter_map(|line| {
+                if line.contains(&format!("[{}]", self.profile)) {
+                    parsing = true;
+                } else if re.is_match(line) {
+                    parsing = false;
+                }
+                if parsing && !line.is_empty() {
+                    let mut parts = line.trim().splitn(2, "=");
+                    let property = parts.next()?.trim().to_string();
+                    let value = parts.next()?.trim().to_string();
+                    Some((property, value))
+                } else {
+                    None
+                }
+            })
+            .collect();
 
         return credentials;
     }
@@ -71,19 +80,22 @@ impl<'a> ParseCredentials<AwsCredentials> for Aws<'a> {
         let file = fs::read_to_string(&self.credentials_path)?;
         let file_credentials = self.extract_credentials_from_file(file);
         let env_credentials = self.extract_credentials_from_env();
-        let credentials = file_credentials.into_iter().chain(env_credentials).collect::<HashMap<_,_>>();
+        let credentials = file_credentials
+            .into_iter()
+            .chain(env_credentials)
+            .collect::<HashMap<_, _>>();
         let access_key_id = credentials.get("aws_access_key_id");
         let secret_access_key = credentials.get("aws_secret_access_key");
         let session_token = credentials.get("aws_session_token");
         let region = credentials.get("region");
         match (access_key_id, secret_access_key, session_token, region) {
-            (Some(key_id), Some(secret), Some(session_token), Some(region)) => Ok(AwsCredentials{
+            (Some(key_id), Some(secret), Some(session_token), Some(region)) => Ok(AwsCredentials {
                 access_key_id: key_id.to_string(),
                 secret_access_key: secret.to_string(),
                 session_token: session_token.to_string(),
                 region: region.to_string(),
             }),
-            _ => Err(anyhow!("Missing aws credentials"))
+            _ => Err(anyhow!("Missing aws credentials")),
         }
     }
 }
@@ -113,22 +125,27 @@ mod test {
         assert!(credentials.get("region").is_some());
 
         assert_eq!(credentials.get("aws_access_key_id").unwrap(), "defaultid");
-        assert_eq!(credentials.get("aws_secret_access_key").unwrap(), "defaultsecret");
+        assert_eq!(
+            credentials.get("aws_secret_access_key").unwrap(),
+            "defaultsecret"
+        );
         assert_eq!(credentials.get("region").unwrap(), "default");
-        
     }
 
     #[test]
     fn test_extract_credentials_different_profile() {
         let aws_provider = Aws::new(Some("test"), None);
-        
+
         let credentials = aws_provider.extract_credentials_from_file(TEST_FILE.to_string());
         assert!(credentials.get("aws_access_key_id").is_some());
         assert!(credentials.get("aws_secret_access_key").is_some());
         assert!(credentials.get("region").is_some());
 
         assert_eq!(credentials.get("aws_access_key_id").unwrap(), "testid");
-        assert_eq!(credentials.get("aws_secret_access_key").unwrap(), "testsecret");
+        assert_eq!(
+            credentials.get("aws_secret_access_key").unwrap(),
+            "testsecret"
+        );
         assert_eq!(credentials.get("region").unwrap(), "test");
     }
 }
