@@ -56,14 +56,13 @@ mod tests {
     fn check_extract_date_parts() {
         let DateParts(year, month, day, hour, minute, second) =
             extract_date_parts("2024-02-01 17:02:00").expect("Value should be parsed correctly");
-    
+
         assert_eq!(year, 2024);
         assert_eq!(month, 02);
         assert_eq!(day, 01);
         assert_eq!(hour, 17);
         assert_eq!(minute, 02);
         assert_eq!(second, 00);
-
     }
 
     #[test]
@@ -75,6 +74,4 @@ mod tests {
         assert!(extract_date_parts("2024-01 17:02").is_err());
         assert!(extract_date_parts("2024-01 17:02:").is_err());
     }
-    
 }
-

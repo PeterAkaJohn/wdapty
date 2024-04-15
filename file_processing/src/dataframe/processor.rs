@@ -3,7 +3,6 @@ use std::path::PathBuf;
 use anyhow::Result;
 use polars::lazy::frame::LazyFrame;
 
-
 #[derive(Debug)]
 pub struct Processor {
     pub index_name: Option<String>,

@@ -35,8 +35,10 @@ mod test {
             .arg("search")
             .arg("--file-name")
             .arg("test/file/doesnt/exist")
-            .arg("--index-value").arg("doesnotmatter")
-            .arg("--index-name").arg("doesnotmatter");
+            .arg("--index-value")
+            .arg("doesnotmatter")
+            .arg("--index-name")
+            .arg("doesnotmatter");
         cmd.assert()
             .failure()
             .stderr(predicate::str::contains("File does not exist"));
@@ -53,8 +55,10 @@ mod test {
             .arg("search")
             .arg("--file-name")
             .arg(test_file_path)
-            .arg("--index-value").arg("2024-02-01 17:01:00")
-            .arg("--index-name").arg("transaction_time");
+            .arg("--index-value")
+            .arg("2024-02-01 17:01:00")
+            .arg("--index-name")
+            .arg("transaction_time");
         cmd.assert().success();
 
         Ok(())
@@ -70,7 +74,8 @@ mod test {
             .arg("download")
             .arg("--file-name")
             .arg(test_file_path)
-            .arg("--output-file").arg(output_file);
+            .arg("--output-file")
+            .arg(output_file);
         cmd.assert().success();
 
         Ok(())
@@ -86,7 +91,8 @@ mod test {
             .arg("download")
             .arg("--file-name")
             .arg(test_file_path)
-            .arg("--output-file").arg(output_file);
+            .arg("--output-file")
+            .arg(output_file);
         cmd.assert()
             .failure()
             .stderr(predicate::str::contains("Failed to create file"));
@@ -104,9 +110,12 @@ mod test {
             .arg("search")
             .arg("--file-name")
             .arg(test_file_path)
-            .arg("--index-value").arg("2024-02-01 17:01:00")
-            .arg("--index-name").arg("transaction_time")
-            .arg("--cols").args(cols);
+            .arg("--index-value")
+            .arg("2024-02-01 17:01:00")
+            .arg("--index-name")
+            .arg("transaction_time")
+            .arg("--cols")
+            .args(cols);
         cmd.assert().success();
 
         Ok(())
@@ -122,9 +131,12 @@ mod test {
             .arg("search")
             .arg("--file-name")
             .arg(test_file_path)
-            .arg("--index-value").arg("2024-02-01 17:01:00")
-            .arg("--index-name").arg("transaction_time")
-            .arg("--cols").args(cols);
+            .arg("--index-value")
+            .arg("2024-02-01 17:01:00")
+            .arg("--index-name")
+            .arg("transaction_time")
+            .arg("--cols")
+            .args(cols);
         cmd.assert()
             .failure()
             .stderr(predicate::str::contains("not found: donotexist"));
@@ -143,8 +155,10 @@ mod test {
             .arg("search")
             .arg("--file-name")
             .arg(test_file_path)
-            .arg("--index-value").arg(index_value)
-            .arg("--index-name").arg(index_name);
+            .arg("--index-value")
+            .arg(index_value)
+            .arg("--index-name")
+            .arg(index_name);
         cmd.assert()
             .failure()
             .stderr(predicate::str::contains("not found"));
@@ -163,8 +177,10 @@ mod test {
             .arg("search")
             .arg("--file-name")
             .arg(test_file_path)
-            .arg("--index-value").arg(index_value)
-            .arg("--index-name").arg(index_name);
+            .arg("--index-value")
+            .arg(index_value)
+            .arg("--index-name")
+            .arg(index_name);
         cmd.assert()
             .failure()
             .stderr(predicate::str::contains("Failed to format index-value"));

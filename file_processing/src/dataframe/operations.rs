@@ -1,4 +1,7 @@
-use polars::lazy::{dsl::{col, Expr}, frame::LazyFrame};
+use polars::lazy::{
+    dsl::{col, Expr},
+    frame::LazyFrame,
+};
 
 pub fn filter_columns(df: LazyFrame, columns: &Option<Vec<Expr>>) -> LazyFrame {
     if let Some(exprs) = columns {
@@ -25,7 +28,7 @@ mod tests {
 
         // Create a LazyFrame from the DataFrame
         let lazy_df = df.lazy();
-        
+
         let df = DataFrame::new(vec![
             Series::new("A", &[1, 2, 3]),
             Series::new("B", &[4, 5, 6]),

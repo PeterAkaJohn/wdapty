@@ -1,13 +1,19 @@
 use std::path::PathBuf;
 
-use anyhow::{anyhow, Context, Ok, Result};
-use credentials::get_credentials;
-use cloud::AmazonS3ConfigKey as Key;
-use polars::{io::cloud, lazy::{dsl::col, frame::{LazyFrame, ScanArgsParquet}}};
 use super::{
     expressions::get_index_expr_if_needed,
     operations::filter_columns,
     processor::{Runnable, ScanFile},
+};
+use anyhow::{anyhow, Context, Ok, Result};
+use cloud::AmazonS3ConfigKey as Key;
+use credentials::get_credentials;
+use polars::{
+    io::cloud,
+    lazy::{
+        dsl::col,
+        frame::{LazyFrame, ScanArgsParquet},
+    },
 };
 
 pub struct ParqProcessor<'a> {
@@ -47,19 +53,19 @@ impl ScanFile for ParqProcessor<'_> {
     fn scan(&self) -> Result<LazyFrame> {
         if self.file_name.starts_with("s3://") {
             let credentials = get_credentials("aws", self.profile, None)?;
-            let cloud_options = cloud::CloudOptions::default()
-            .with_aws([
+            let cloud_options = cloud::CloudOptions::default().with_aws([
                 (Key::AccessKeyId, &credentials.access_key_id),
                 (Key::SecretAccessKey, &credentials.secret_access_key),
                 (Key::Region, &credentials.region),
-                (Key::Token, &credentials.session_token)
+                (Key::Token, &credentials.session_token),
             ]);
             let args = ScanArgsParquet {
                 cloud_options: Some(cloud_options),
                 ..Default::default()
             };
-            return LazyFrame::scan_parquet(&self.file_name, args)
-                .with_context(|| format!("File does not exist. Might need to pass --profile option"));
+            return LazyFrame::scan_parquet(&self.file_name, args).with_context(|| {
+                format!("File does not exist. Might need to pass --profile option")
+            });
         } else {
             return LazyFrame::scan_parquet(&self.file_name, Default::default())
                 .with_context(|| format!("File does not exist"));
@@ -82,10 +88,12 @@ impl Runnable for ParqProcessor<'_> {
                 let index_expr = get_index_expr_if_needed(idx_name, idx_value)?;
                 let lf1 = filter_columns(lf1.filter(index_expr), &exprs);
                 Ok(lf1)
-            },
+            }
             (None, Some(_)) | (Some(_), None) => {
-                return Err(anyhow!("Search failed. Either index-name or index-value is missing"));
-            },
+                return Err(anyhow!(
+                    "Search failed. Either index-name or index-value is missing"
+                ));
+            }
             _ => Ok(filter_columns(lf1, &exprs)),
         }
     }

@@ -8,7 +8,6 @@ use anyhow::{Context, Ok, Result};
 
 use super::save_patterns_to_config;
 
-
 pub fn get_config_file() -> Result<(String, File)> {
     let app_config_path = "~/.wdapty/config.ini";
     let expanded_path: PathBuf = shellexpand::tilde(app_config_path).to_string().into();
