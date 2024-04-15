@@ -1,31 +1,11 @@
-use std::{
-    fs::{create_dir_all, File, OpenOptions},
-    io::{self},
-    path::PathBuf,
-};
+use std::io::{self};
 
-use anyhow::{Context, Ok, Result};
+use anyhow::{Ok, Result};
 
-use super::save_patterns_to_config;
-
-pub fn get_config_file() -> Result<(String, File)> {
-    let app_config_path = "~/.wdapty/config.ini";
-    let expanded_path: PathBuf = shellexpand::tilde(app_config_path).to_string().into();
-    let prefix = expanded_path
-        .parent()
-        .with_context(|| format!("Failed to extract parent from {}", expanded_path.display()))?;
-    create_dir_all(prefix)
-        .with_context(|| format!("Failed to create config dir {}", prefix.display()))?;
-    let file = OpenOptions::new()
-        .append(true)
-        .create(true)
-        .open(&expanded_path)
-        .with_context(|| format!("Failed at File::Create {}", &app_config_path))?;
-    Ok((app_config_path.to_string(), file))
-}
+use super::config::{get_config_file, save_vec_of_string_to_config};
 
 pub fn initialize(starting_patterns: Option<Vec<String>>) -> Result<String> {
-    let (app_config_path, file) = get_config_file()?;
+    let (app_config_path, file) = get_config_file(None)?;
     let patterns: Vec<String> = if let Some(st_patterns) = starting_patterns {
         st_patterns
     } else {
@@ -43,7 +23,7 @@ pub fn initialize(starting_patterns: Option<Vec<String>>) -> Result<String> {
         new_patterns
     };
 
-    save_patterns_to_config(patterns, file)?;
+    save_vec_of_string_to_config(patterns, file)?;
 
     Ok(app_config_path)
 }

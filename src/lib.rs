@@ -1,13 +1,16 @@
 use anyhow::{Context, Result};
 use clap::{Args, Parser, Subcommand};
-use commands::{configure::initialize, handle_pattern, pattern::get_available_patterns};
+use commands::{configure::initialize, pattern::get_available_patterns, RunCommand};
 use file_processing::{
     dataframe::{file::handle_output, parq::ParqProcessor, processor::Runnable},
     Processors,
 };
 use std::path::PathBuf;
 
-use crate::commands::pattern::{add_pattern_to_config, remove_pattern_from_config};
+use crate::commands::{
+    acquire_file_name,
+    pattern::{add_pattern_to_config, remove_pattern_from_config},
+};
 mod commands;
 
 #[derive(Parser, Debug)]
@@ -80,10 +83,6 @@ enum ProcessingCommands {
         #[command(flatten)]
         defaults: DefaultProcessingOpts,
     },
-}
-
-trait RunCommand {
-    fn run(self) -> Result<()>;
 }
 
 impl RunCommand for ProcessingCommands {
@@ -193,31 +192,21 @@ impl RunCommand for PatternsCommands {
     }
 }
 
-pub fn run() -> Result<()> {
-    let args = CliArgs::parse();
-    match args.command {
-        Commands::Configure { patterns } => {
-            let config_path = initialize(patterns)?;
-            println!("Saved config.ini in {}", config_path);
-            Ok(())
+impl RunCommand for Commands {
+    fn run(self) -> Result<()> {
+        match self {
+            Commands::Configure { patterns } => {
+                let config_path = initialize(patterns)?;
+                println!("Saved config.ini in {}", config_path);
+                Ok(())
+            }
+            Commands::Patterns(pattern_command) => pattern_command.run(),
+            Commands::Processing(processing_command) => processing_command.run(),
         }
-        Commands::Processing(subcom) => subcom.run(),
-        Commands::Patterns(subcom) => subcom.run(),
     }
 }
 
-fn acquire_file_name(
-    pattern: Option<String>,
-    file_name: Option<PathBuf>,
-) -> Result<PathBuf, anyhow::Error> {
-    let file_name = if let Some(pat) = pattern {
-        let file_name_from_pattern: PathBuf = handle_pattern(pat.as_str())?.into();
-        Some(file_name_from_pattern)
-    } else {
-        file_name
-    }
-    .with_context(|| {
-        "file name should be valued by option or by setting pattern and reading file"
-    })?;
-    Ok(file_name)
+pub fn run() -> Result<()> {
+    let args = CliArgs::parse();
+    args.command.run()
 }

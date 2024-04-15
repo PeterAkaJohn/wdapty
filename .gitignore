@@ -1,5 +1,5 @@
 /target
 /test_results
 **/generated/*[.parq,.csv]
-**/tests/results/*[.parq,.csv]
+**/tests/results/*[.parq,.csv,.ini]
 wdapty.ini
