@@ -21,7 +21,7 @@ fn read_config_file() -> Result<String> {
 }
 
 fn does_pattern_match_pattern_format(pattern: &str) -> bool {
-    let pattern_format = Regex::new(r"^\w+=([^\s\n]+)$").unwrap();
+    let pattern_format = Regex::new(r"^[A-Za-z0-9_\-.]+=([^\s\n]+)$").unwrap();
     return pattern_format.is_match(pattern);
 }
 
@@ -145,5 +145,11 @@ mod test {
 
         let pattern = "amazingtestname=s3://somethingsomthin easdas//asas//assa/{asdasd}/{asdas}";
         assert!(does_pattern_match_pattern_format(pattern) == false);
+
+        let pattern = "amazingtestname={PATH}/test.parq";
+        assert!(does_pattern_match_pattern_format(pattern));
+
+        let pattern = "amazing-test-name={PATH}/test.parq";
+        assert!(does_pattern_match_pattern_format(pattern));
     }
 }
