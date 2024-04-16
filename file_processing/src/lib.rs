@@ -1,6 +1,6 @@
 use anyhow::Result;
 use dataframe::{parq::ParqProcessor, processor::Runnable};
-use polars::lazy::frame::LazyFrame;
+use polars::frame::DataFrame;
 
 pub mod dataframe;
 
@@ -9,7 +9,7 @@ pub enum Processors<'a> {
 }
 
 impl Runnable for Processors<'_> {
-    fn run(&self) -> Result<LazyFrame> {
+    fn run(&self) -> Result<DataFrame> {
         match self {
             Processors::Parq(parq_processor) => return parq_processor.run(),
         }

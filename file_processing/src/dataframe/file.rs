@@ -1,10 +1,10 @@
-use anyhow::{anyhow, Context};
+use anyhow::{anyhow, Context, Result};
 use polars::io::{csv::CsvWriter, SerWriter};
 
 pub fn handle_output(
     output_file: Option<String>,
     mut df: polars::prelude::DataFrame,
-) -> Result<(), anyhow::Error> {
+) -> Result<()> {
     Ok(if let Some(output_file_path) = output_file {
         let file = std::fs::File::create(&output_file_path)
             .with_context(|| anyhow!("Failed to create file"))?;

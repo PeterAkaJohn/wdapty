@@ -149,16 +149,14 @@ impl RunCommand for ProcessingCommands {
                 cols,
                 file_name,
                 profile.as_deref(),
+                output_file,
             )),
             _ => return Err(anyhow::anyhow!("Invalid Execution type")),
         };
 
-        let result_df = processor
-            .run()
-            .with_context(|| format!("Failed to run processor"))?
-            .collect()?;
+        let _ = processor.run();
 
-        handle_output(output_file, result_df)
+        Ok(())
     }
 }
 

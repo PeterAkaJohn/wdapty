@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use anyhow::Result;
-use polars::lazy::frame::LazyFrame;
+use polars::{frame::DataFrame, lazy::frame::LazyFrame};
 
 #[derive(Debug)]
 pub struct Processor {
@@ -14,9 +14,13 @@ pub struct Processor {
 
 pub trait Runnable {
     // returns the file name
-    fn run(&self) -> Result<LazyFrame>;
+    fn run(&self) -> Result<DataFrame>;
 }
 
 pub trait ScanFile {
     fn scan(&self) -> Result<LazyFrame>;
+}
+
+pub trait HandleOutput {
+    fn handle(&self, df: DataFrame) -> Result<DataFrame>;
 }
