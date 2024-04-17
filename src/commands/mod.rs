@@ -1,5 +1,6 @@
 pub mod config;
 pub mod configure;
+pub mod input;
 pub mod pattern;
 use anyhow::{Context, Result};
 use regex::Regex;
