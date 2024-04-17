@@ -10,11 +10,11 @@ pub fn get_index_expr_if_needed(
     index_value: &str,
 ) -> Result<polars::lazy::dsl::Expr> {
     let index_value_dt =
-        to_datetime_expression(&index_value).with_context(|| "Failed to format index-value");
+        to_datetime_expression(index_value).with_context(|| "Failed to format index-value");
     match index_value_dt {
         Ok(dt_value_expr) => {
-            let index_expr = col(&index_name).eq(dt_value_expr);
-            return Ok(index_expr);
+            let index_expr = col(index_name).eq(dt_value_expr);
+            Ok(index_expr)
         }
         Err(e) => Err(anyhow!(e)),
     }

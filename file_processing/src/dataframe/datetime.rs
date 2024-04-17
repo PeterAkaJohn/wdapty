@@ -16,11 +16,14 @@ pub fn to_datetime_expression(value: &str) -> Result<Expr> {
 struct DateParts(i32, i32, i32, i32, i32, i32);
 
 fn extract_date_parts(value: &str) -> Result<DateParts> {
+    let date_delimiter = '-';
+    let time_delimiter = ':';
+    let time_date_delimiter = ' ';
     let (date_parts, time_parts) = value
-        .split_once(" ")
+        .split_once(time_date_delimiter)
         .ok_or_else(|| anyhow::anyhow!("Invalid datetime format"))?;
-    let date_parts: Vec<&str> = date_parts.split("-").collect();
-    let time_parts: Vec<&str> = time_parts.split(":").collect();
+    let date_parts: Vec<&str> = date_parts.split(date_delimiter).collect();
+    let time_parts: Vec<&str> = time_parts.split(time_delimiter).collect();
 
     if date_parts.len() != 3 || time_parts.len() != 3 {
         return Err(anyhow!(

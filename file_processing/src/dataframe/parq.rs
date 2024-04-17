@@ -2,14 +2,16 @@ use std::path::PathBuf;
 
 use super::{
     expressions::get_index_expr_if_needed,
+    file::{HandleOutput, ScanFile},
     operations::filter_columns,
-    processor::{Runnable, ScanFile},
+    processor::Runnable,
 };
 use anyhow::{anyhow, Context, Ok, Result};
 use cloud::AmazonS3ConfigKey as Key;
 use credentials::get_credentials;
 use polars::{
-    io::cloud,
+    frame::DataFrame,
+    io::{cloud, csv::CsvWriter, SerWriter},
     lazy::{
         dsl::col,
         frame::{LazyFrame, ScanArgsParquet},
@@ -22,6 +24,7 @@ pub struct ParqProcessor<'a> {
     pub cols: Option<Vec<String>>,
     pub file_name: PathBuf,
     pub profile: Option<&'a str>,
+    output_file: Option<String>,
 }
 
 impl<'a> ParqProcessor<'a> {
@@ -31,6 +34,7 @@ impl<'a> ParqProcessor<'a> {
         cols: Option<Vec<String>>,
         file_name: PathBuf,
         profile: Option<&'a str>,
+        output_file: Option<String>,
     ) -> Self {
         let file_name = if file_name.starts_with("~") {
             let expanded_path =
@@ -39,13 +43,14 @@ impl<'a> ParqProcessor<'a> {
         } else {
             file_name
         };
-        return Self {
+        Self {
             index_name,
             index_value,
             cols,
             file_name,
             profile,
-        };
+            output_file,
+        }
     }
 }
 
@@ -63,18 +68,18 @@ impl ScanFile for ParqProcessor<'_> {
                 cloud_options: Some(cloud_options),
                 ..Default::default()
             };
-            return LazyFrame::scan_parquet(&self.file_name, args).with_context(|| {
-                format!("File does not exist. Might need to pass --profile option")
-            });
+            LazyFrame::scan_parquet(&self.file_name, args).with_context(|| {
+                "File does not exist. Might need to pass --profile option".to_string()
+            })
         } else {
-            return LazyFrame::scan_parquet(&self.file_name, Default::default())
-                .with_context(|| format!("File does not exist"));
+            LazyFrame::scan_parquet(&self.file_name, Default::default())
+                .with_context(|| "File does not exist".to_string())
         }
     }
 }
 
 impl Runnable for ParqProcessor<'_> {
-    fn run(&self) -> Result<LazyFrame> {
+    fn run(&self) -> Result<DataFrame> {
         let index_name = &self.index_name;
         let index_value = &self.index_value;
 
@@ -83,19 +88,36 @@ impl Runnable for ParqProcessor<'_> {
             .cols
             .as_ref()
             .map(|values| values.iter().map(|column| col(column)).collect::<Vec<_>>());
-        match (index_name, index_value) {
+        let lf1 = match (index_name, index_value) {
             (Some(idx_name), Some(idx_value)) => {
                 let index_expr = get_index_expr_if_needed(idx_name, idx_value)?;
                 let lf1 = filter_columns(lf1.filter(index_expr), &exprs);
                 Ok(lf1)
             }
-            (None, Some(_)) | (Some(_), None) => {
-                return Err(anyhow!(
-                    "Search failed. Either index-name or index-value is missing"
-                ));
-            }
+            (None, Some(_)) | (Some(_), None) => Err(anyhow!(
+                "Search failed. Either index-name or index-value is missing"
+            )),
             _ => Ok(filter_columns(lf1, &exprs)),
+        };
+
+        self.handle(lf1?.collect()?)
+    }
+}
+
+impl HandleOutput for ParqProcessor<'_> {
+    fn handle(&self, mut df: DataFrame) -> Result<DataFrame> {
+        if let Some(output_file_path) = self.output_file.to_owned() {
+            let file = std::fs::File::create(&output_file_path)
+                .with_context(|| anyhow!("Failed to create file"))?;
+            let mut writer = CsvWriter::new(file);
+            writer
+                .finish(&mut df)
+                .with_context(|| anyhow!("Failed to write csv output file"))?;
+            println!("Results are available in {}", &output_file_path);
+        } else {
+            println!("{}", df);
         }
+        Ok(df)
     }
 }
 
@@ -167,7 +189,7 @@ mod tests {
         assert!(test_file_path.is_ok());
         let test_file_path = test_file_path.unwrap();
         let test_file_path = PathBuf::from(test_file_path);
-        let processor = ParqProcessor::new(None, None, None, test_file_path, None);
+        let processor = ParqProcessor::new(None, None, None, test_file_path, None, None);
         let result = processor.scan();
         assert!(result.is_ok());
         let lazy_frame = result.unwrap();
@@ -180,10 +202,10 @@ mod tests {
         assert!(test_file_path.is_ok());
         let test_file_path = test_file_path.unwrap();
         let test_file_path = PathBuf::from(test_file_path);
-        let processor = ParqProcessor::new(None, None, None, test_file_path, None);
+        let processor = ParqProcessor::new(None, None, None, test_file_path, None, None);
         let result = processor.run();
         assert!(result.is_ok());
         let lazy_frame = result.unwrap();
-        assert_eq!(lazy_frame.schema().unwrap().iter_fields().len(), 10); // Replace 0 with the expected number of fields
+        assert_eq!(lazy_frame.schema().iter_fields().len(), 10); // Replace 0 with the expected number of fields
     }
 }
