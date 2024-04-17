@@ -11,7 +11,7 @@ pub enum Processors<'a> {
 impl Runnable for Processors<'_> {
     fn run(&self) -> Result<DataFrame> {
         match self {
-            Processors::Parq(parq_processor) => return parq_processor.run(),
+            Processors::Parq(parq_processor) => parq_processor.run(),
         }
     }
 }

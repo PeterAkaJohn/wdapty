@@ -1,8 +1,8 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use clap::{Args, Parser, Subcommand};
 use commands::{configure::initialize, pattern::get_available_patterns, RunCommand};
 use file_processing::{
-    dataframe::{file::handle_output, parq::ParqProcessor, processor::Runnable},
+    dataframe::{parq::ParqProcessor, processor::Runnable},
     Processors,
 };
 use std::path::PathBuf;
@@ -93,7 +93,6 @@ impl RunCommand for ProcessingCommands {
                     output_file,
                     defaults,
                 } => {
-                    let defaults = defaults;
                     let DefaultProcessingOpts {
                         profile,
                         file_name,
@@ -120,7 +119,6 @@ impl RunCommand for ProcessingCommands {
                     cols,
                     defaults,
                 } => {
-                    let defaults = defaults;
                     let DefaultProcessingOpts {
                         profile,
                         file_name,

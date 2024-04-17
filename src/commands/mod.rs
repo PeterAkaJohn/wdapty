@@ -13,7 +13,7 @@ fn collect_user_input_from_string(value: &str) -> Vec<String> {
         .captures_iter(value)
         .map(|cap| cap[1].to_string())
         .collect::<Vec<_>>();
-    return variables_to_ask;
+    variables_to_ask
 }
 
 fn ask_user_variables_value(variables_to_ask: Vec<String>) -> HashMap<String, String> {
@@ -34,9 +34,9 @@ fn replace_string_variables_with_value(
 ) -> String {
     let mut result = string_with_variables.to_string();
     for (key, value) in user_input {
-        result = result.replace(&format!("{{{}}}", key), &value.trim());
+        result = result.replace(&format!("{{{}}}", key), value.trim());
     }
-    return result;
+    result
 }
 
 pub fn acquire_file_name(

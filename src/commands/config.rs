@@ -54,16 +54,17 @@ pub fn save_string_to_config_with_overwrite(patterns: Vec<String>, file: File) -
 }
 
 pub fn save_string_to_config(pattern: String, file: &mut File) -> Result<(), anyhow::Error> {
-    Ok(if does_pattern_match_pattern_format(&pattern) {
+    if does_pattern_match_pattern_format(&pattern) {
         println!("Saving pattern {} to config.ini", pattern);
         file.write(format!("{}\n", pattern).as_bytes())
             .with_context(|| format!("Failed to save pattern {}", pattern))?;
+        Ok(())
     } else {
-        return Err(anyhow!(
+        Err(anyhow!(
             "Pattern {} is not compliant with pattern_format name=value",
             pattern
-        ));
-    })
+        ))
+    }
 }
 
 #[cfg(test)]

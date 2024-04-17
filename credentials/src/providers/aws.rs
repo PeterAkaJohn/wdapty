@@ -26,14 +26,15 @@ impl<'a> Aws<'a> {
                 .parse::<String>()
                 .unwrap()
         });
-        return Aws {
+        Aws {
             profile,
             credentials_path,
-        };
+        }
     }
 
     fn extract_credentials_from_file(&self, file: String) -> HashMap<String, String> {
         let mut parsing = false;
+        let property_delimiter = '=';
         let re = Regex::new(r"\[.*\]").unwrap();
         let credentials: HashMap<String, String> = file
             .lines()
@@ -44,7 +45,7 @@ impl<'a> Aws<'a> {
                     parsing = false;
                 }
                 if parsing && !line.is_empty() {
-                    let mut parts = line.trim().splitn(2, "=");
+                    let mut parts = line.trim().splitn(2, property_delimiter);
                     let property = parts.next()?.trim().to_string();
                     let value = parts.next()?.trim().to_string();
                     Some((property, value))
@@ -54,7 +55,7 @@ impl<'a> Aws<'a> {
             })
             .collect();
 
-        return credentials;
+        credentials
     }
 
     fn extract_credentials_from_env(&self) -> HashMap<String, String> {
@@ -71,7 +72,7 @@ impl<'a> Aws<'a> {
         if let Ok(region) = env::var("AWS_REGION") {
             credentials.insert("region".to_string(), region);
         }
-        return credentials;
+        credentials
     }
 }
 

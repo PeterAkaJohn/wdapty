@@ -10,11 +10,12 @@ use super::{
 };
 
 pub fn get_available_patterns() -> Result<HashMap<String, String>> {
-    Ok(read_config_file()?
+    let delimiter = '=';
+    let patterns = read_config_file()?
         .lines()
         .filter_map(|line| {
             if does_pattern_match_pattern_format(line) {
-                let mut parts = line.splitn(2, "=");
+                let mut parts = line.splitn(2, delimiter);
                 Some((
                     parts.next()?.trim().to_string(),
                     parts.next()?.trim().to_string(),
@@ -23,13 +24,14 @@ pub fn get_available_patterns() -> Result<HashMap<String, String>> {
                 None
             }
         })
-        .collect::<HashMap<String, String>>())
+        .collect::<HashMap<String, String>>();
+    Ok(patterns)
 }
 
 pub fn add_pattern_to_config(name: String, value: String) -> Result<()> {
     let available_patterns = get_available_patterns();
     if let Ok(available) = available_patterns {
-        if let Some(_) = available.get_key_value(&name) {
+        if available.get_key_value(&name).is_some() {
             return Err(anyhow!(
                 "Pattern supplied with name {} is already in config",
                 &name
@@ -45,7 +47,7 @@ pub fn remove_pattern_from_config(name: String) -> Result<()> {
     let new_file_content = content
         .lines()
         .filter_map(|line| {
-            if line.contains(&format!("{}=", name.trim()).trim()) {
+            if line.contains(format!("{}=", name.trim()).trim()) {
                 None
             } else {
                 Some(line.to_string())
@@ -58,22 +60,23 @@ pub fn remove_pattern_from_config(name: String) -> Result<()> {
 }
 
 pub fn handle_pattern(pattern_name: &str) -> Result<String> {
-    return parse_config_file_for_pattern(pattern_name)
+    parse_config_file_for_pattern(pattern_name)
         .map(|pat| {
             let variables_to_ask = collect_user_input_from_string(&pat);
             let user_filled_variables = ask_user_variables_value(variables_to_ask);
             replace_string_variables_with_value(&pat, user_filled_variables)
         })
-        .with_context(|| format!("Failed to handle pattern {}", pattern_name));
+        .with_context(|| format!("Failed to handle pattern {}", pattern_name))
 }
 
 fn parse_config_file_for_pattern(pattern_name: &str) -> Result<String> {
     let file = read_config_file()?;
+    let delimiter = '=';
     let pattern = file
         .lines()
         .filter_map(|line| {
             if line.contains(pattern_name) {
-                let mut line_parts = line.splitn(2, "=");
+                let mut line_parts = line.splitn(2, delimiter);
                 let property = line_parts.next()?.trim().to_string();
                 let value = line_parts.next()?.trim().to_string();
                 Some((property, value))
@@ -83,15 +86,15 @@ fn parse_config_file_for_pattern(pattern_name: &str) -> Result<String> {
         })
         .collect::<HashMap<String, String>>();
 
-    return pattern
+    pattern
         .get(pattern_name)
         .map(|pat| pat.to_string())
-        .ok_or(anyhow!("No property named {} in wdapty.ini", pattern_name));
+        .ok_or(anyhow!("No property named {} in wdapty.ini", pattern_name))
 }
 
 pub fn does_pattern_match_pattern_format(pattern: &str) -> bool {
     let pattern_format = Regex::new(r"^[A-Za-z0-9_\-.]+=([^\s\n]+)$").unwrap();
-    return pattern_format.is_match(pattern);
+    pattern_format.is_match(pattern)
 }
 
 #[test]

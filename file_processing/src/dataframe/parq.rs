@@ -42,14 +42,14 @@ impl<'a> ParqProcessor<'a> {
         } else {
             file_name
         };
-        return Self {
+        Self {
             index_name,
             index_value,
             cols,
             file_name,
             profile,
             output_file,
-        };
+        }
     }
 }
 
@@ -67,12 +67,12 @@ impl ScanFile for ParqProcessor<'_> {
                 cloud_options: Some(cloud_options),
                 ..Default::default()
             };
-            return LazyFrame::scan_parquet(&self.file_name, args).with_context(|| {
-                format!("File does not exist. Might need to pass --profile option")
-            });
+            LazyFrame::scan_parquet(&self.file_name, args).with_context(|| {
+                "File does not exist. Might need to pass --profile option".to_string()
+            })
         } else {
-            return LazyFrame::scan_parquet(&self.file_name, Default::default())
-                .with_context(|| format!("File does not exist"));
+            LazyFrame::scan_parquet(&self.file_name, Default::default())
+                .with_context(|| "File does not exist".to_string())
         }
     }
 }

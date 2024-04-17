@@ -5,9 +5,9 @@ use polars::lazy::{
 
 pub fn filter_columns(df: LazyFrame, columns: &Option<Vec<Expr>>) -> LazyFrame {
     if let Some(exprs) = columns {
-        return df.select(exprs);
+        df.select(exprs)
     } else {
-        return df.select([col("*")]);
+        df.select([col("*")])
     }
 }
 
