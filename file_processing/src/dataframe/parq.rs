@@ -2,8 +2,9 @@ use std::path::PathBuf;
 
 use super::{
     expressions::get_index_expr_if_needed,
+    file::{HandleOutput, ScanFile},
     operations::filter_columns,
-    processor::{HandleOutput, Runnable, ScanFile},
+    processor::Runnable,
 };
 use anyhow::{anyhow, Context, Ok, Result};
 use cloud::AmazonS3ConfigKey as Key;
@@ -93,11 +94,9 @@ impl Runnable for ParqProcessor<'_> {
                 let lf1 = filter_columns(lf1.filter(index_expr), &exprs);
                 Ok(lf1)
             }
-            (None, Some(_)) | (Some(_), None) => {
-                return Err(anyhow!(
-                    "Search failed. Either index-name or index-value is missing"
-                ));
-            }
+            (None, Some(_)) | (Some(_), None) => Err(anyhow!(
+                "Search failed. Either index-name or index-value is missing"
+            )),
             _ => Ok(filter_columns(lf1, &exprs)),
         };
 
@@ -107,21 +106,18 @@ impl Runnable for ParqProcessor<'_> {
 
 impl HandleOutput for ParqProcessor<'_> {
     fn handle(&self, mut df: DataFrame) -> Result<DataFrame> {
-        Ok(
-            if let Some(output_file_path) = self.output_file.to_owned() {
-                let file = std::fs::File::create(&output_file_path)
-                    .with_context(|| anyhow!("Failed to create file"))?;
-                let mut writer = CsvWriter::new(file);
-                writer
-                    .finish(&mut df)
-                    .with_context(|| anyhow!("Failed to write csv output file"))?;
-                println!("Results are available in {}", &output_file_path);
-                df
-            } else {
-                println!("{}", df);
-                df
-            },
-        )
+        if let Some(output_file_path) = self.output_file.to_owned() {
+            let file = std::fs::File::create(&output_file_path)
+                .with_context(|| anyhow!("Failed to create file"))?;
+            let mut writer = CsvWriter::new(file);
+            writer
+                .finish(&mut df)
+                .with_context(|| anyhow!("Failed to write csv output file"))?;
+            println!("Results are available in {}", &output_file_path);
+        } else {
+            println!("{}", df);
+        }
+        Ok(df)
     }
 }
 

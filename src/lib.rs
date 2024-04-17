@@ -152,7 +152,7 @@ impl RunCommand for ProcessingCommands {
             _ => return Err(anyhow::anyhow!("Invalid Execution type")),
         };
 
-        let _ = processor.run();
+        processor.run()?;
 
         Ok(())
     }
